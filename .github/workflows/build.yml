@@ -2,7 +2,6 @@ name: build
 
 on:
   workflow_dispatch:
-  # push:
 
 jobs:
   build-linux:
@@ -21,10 +20,10 @@ jobs:
             tool: armv7-unknown-linux-musleabi
           - arch: armv7hf
             tool: armv7-unknown-linux-musleabihf
-          - arch: loong64
-            tool: loongarch64-unknown-linux-musl
-          - arch: m68k
-            tool: m68k-unknown-linux-musl
+          # - arch: loong64
+          #   tool: loongarch64-unknown-linux-musl
+          # - arch: m68k
+          #   tool: m68k-unknown-linux-musl
           - arch: mips64el
             tool: mips64el-unknown-linux-musl
           - arch: mips64
@@ -47,15 +46,12 @@ jobs:
             tool: riscv64-unknown-linux-musl
           - arch: s390x
             tool: s390x-ibm-linux-musl
-          - arch: sh
-            tool: sh-multilib-linux-musl
+          # - arch: sh
+          #   tool: sh-multilib-linux-musl
           - arch: x86
-            tool: x86_64-multilib-linux-musl
-            env:
-              CFLAGS: '-m32'
-              LDFLAGS: '-m32'
-          - arch: x86-64
-            tool: x86_64-multilib-linux-musl
+            tool: i586-unknown-linux-musl
+          - arch: x86_64
+            tool: x86_64-unknown-linux-musl
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -76,29 +72,27 @@ jobs:
         env:
           ARCH: ${{ matrix.arch }}
           TOOL: ${{ matrix.tool }}
-          CFLAGS: ${{ matrix.env.CFLAGS }}
-          LDFLAGS: ${{ matrix.env.LDFLAGS }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           sed -i 's/ -O./ -Os/' Makefile
-          CFLAGS="-static-libgcc -static $CFLAGS" \
-          LDFLAGS="-static-libgcc -static -s $LDFLAGS" \
+          CFLAGS="-static-libgcc -static" \
+          LDFLAGS="-static-libgcc -static -s" \
           make -j$(nproc) CC=$TOOL-gcc LD=$TOOL-ld AR=$TOOL-ar NM=$TOOL-nm STRIP=$TOOL-strip || exit 1
-          tar -cJvf byedpi-$ARCH.tar.xz ciadpi
+          tar -czvf byedpi-$ARCH.tar.gz ciadpi
 
       - name: Upload artifacts
         if: steps.build.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: byedpi-${{ matrix.arch }}
-          path: ./**/byedpi-*.tar.xz
+          path: byedpi-*.tar.gz
 
   build-windows:
     name: ${{ matrix.arch }}-w64
     runs-on: ubuntu-24.04
     strategy:
       matrix:
-        arch: [x86_64, i686]
+        arch: [ x86_64, i686 ]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -124,10 +118,47 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: byedpi-${{ matrix.arch }}-w64
-          path: ./**/byedpi-*.zip
+          path: byedpi-*.zip
+
+  build-cygwin:
+    name: Cygwin ${{ matrix.arch }}
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        arch: [ x86_64, x86 ]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Set up Cygwin
+        uses: cygwin/cygwin-install-action@v4
+        with:
+          platform: ${{ matrix.arch }}
+          site: ${{ matrix.arch == 'x86_64' && 'http://ctm.crouchingtigerhiddenfruitbat.org/pub/cygwin/circa/64bit/2016/08/30/104235' || 'http://ctm.crouchingtigerhiddenfruitbat.org/pub/cygwin/circa/2016/08/30/104223' }}
+          check-sig: 'false'
+          packages: >-
+            gcc-core
+            make
+            zip
+
+      - name: Build
+        shell: C:\cygwin\bin\bash.exe -eo pipefail '{0}'
+        run: >-
+          export MAKEFLAGS=-j$(nproc) &&
+          make &&
+          zip byedpi-${{ matrix.arch }}-cygwin.zip ciadpi.exe
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: byedpi-${{ matrix.arch }}-cygwin
+          path: byedpi-*.zip
+          if-no-files-found: error
 
   release:
-    needs: [build-linux, build-windows]
+    needs: [ build-linux, build-windows, build-cygwin ]
     permissions:
       contents: write
     env:
@@ -157,5 +188,5 @@ jobs:
             * Commit: hufrea/byedpi@${{ env.SHA_SHORT }}
           target_commitish : main
           files: |
-            ./**/byedpi-*.tar.xz
+            ./**/byedpi-*.tar.gz
             ./**/byedpi-*.zip
