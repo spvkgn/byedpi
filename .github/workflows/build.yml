@@ -89,6 +89,25 @@ jobs:
           name: byedpi-${{ matrix.arch }}
           path: byedpi-*.tar.gz
 
+  build-darwin:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Build
+        run: |
+          make darwin -j$(sysctl -n hw.logicalcpu)
+          tar -czvf byedpi-darwin.tar.gz ciadpi
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: byedpi-darwin
+          path: byedpi-*.tar.gz
+
   build-windows:
     if: false
     name: ${{ matrix.arch }}-w64
