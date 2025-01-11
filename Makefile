@@ -21,8 +21,8 @@ $(TARGET): $(OBJ)
 	$(CC) -o $(TARGET) $(OBJ) $(LDFLAGS)
 
 darwin: $(OBJ)
-	$(CC) -o $(TARGET)-arm64 -target arm64-apple-macos10.8 $(OBJ) $(LDFLAGS)
-	$(CC) -o $(TARGET)-x64 -target x86_64-apple-macos10.8 $(OBJ) $(LDFLAGS)
+	$(CC) -o $(TARGET)-arm64 -target arm64-apple-macos $(OBJ) $(LDFLAGS)
+	$(CC) -o $(TARGET)-x64 -target x86_64-apple-macos $(OBJ) $(LDFLAGS)
 	lipo -create -output $(TARGET) $(TARGET)-arm64 $(TARGET)-x64
 	rm -f $(TARGET)-arm64 $(TARGET)-x64
 

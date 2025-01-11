@@ -94,12 +94,13 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          ref: main
+        # with:
+        #   ref: main
 
       - name: Build
         run: |
-          make darwin -j$(sysctl -n hw.logicalcpu)
+          # make darwin -j$(sysctl -n hw.logicalcpu)
+          make darwin
           tar -czvf byedpi-darwin.tar.gz ciadpi
 
       - name: Upload artifacts
