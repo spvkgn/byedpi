@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <assert.h>
 
 #include "mpool.h"
 
@@ -20,14 +21,20 @@
 #define FAKE_SUPPORT 1
 #define TIMEOUT_SUPPORT 1
 #endif
-    
-#define OFFSET_SNI 1
-#define OFFSET_HOST 2
-#define OFFSET_END 3
+
+#define OFFSET_END 1
+#define OFFSET_MID 2
+#define OFFSET_RAND 4
+#define OFFSET_SNI 8
+#define OFFSET_HOST 16
+#define OFFSET_START 32
 
 #define DETECT_HTTP_LOCAT 1
 #define DETECT_TLS_ERR 2
 #define DETECT_TORST 8
+
+#define AUTO_NOBUFF -1
+#define AUTO_NOSAVE 0
 
 enum demode {
     DESYNC_NONE,
@@ -53,6 +60,7 @@ struct part {
     int m;
     int flag;
     long pos;
+    int r, s;
 };
 
 struct packet {
@@ -81,7 +89,9 @@ struct desync_params {
     int proto;
     int detect;
     struct mphdr *hosts;
+    struct mphdr *ipset;
     uint16_t pf[2];
+    int rounds[2];
     
     char *file_ptr;
     ssize_t file_size;
@@ -90,7 +100,6 @@ struct desync_params {
 struct params {
     int dp_count;
     struct desync_params *dp;
-    long sfdelay;
     bool wait_send;
     int def_ttl;
     bool custom_ttl;
@@ -110,7 +119,9 @@ struct params {
     bool transparent;
     struct mphdr *mempool;
     
-    char *protect_path;
+    const char *protect_path;
+    const char *pid_file;
+    int pid_fd;
 };
 
 extern struct params params;
@@ -120,4 +131,7 @@ extern struct packet fake_http;
 extern struct packet fake_udp;
 
 extern char ip_option[1];
+
+#define ASSERT(exp) \
+    char t[(exp) ? 1 : -1];
 #endif
