@@ -2,9 +2,11 @@ name: build
 
 on:
   workflow_dispatch:
+  push:
 
 jobs:
   build-linux:
+    if: false
     name: ${{ matrix.arch }}
     runs-on: ubuntu-latest
     strategy:
@@ -88,6 +90,7 @@ jobs:
           path: byedpi-*.tar.gz
 
   build-windows:
+    if: false
     name: ${{ matrix.arch }}-w64
     runs-on: ubuntu-24.04
     strategy:
@@ -121,6 +124,7 @@ jobs:
           path: byedpi-*.zip
 
   build-cygwin:
+    if: false
     name: Cygwin ${{ matrix.arch }}
     runs-on: windows-latest
     strategy:
